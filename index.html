@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>声动动物园 · 分组PK</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --blue: #3b82f6;
+  --cyan: #22b8cf;
+  --green: #20c997;
+  --pink: #ff4f73;
+  --orange: #f5a623;
+  --page-bg: #f3f8fb;
+  --card-bg: #ffffff;
+  --title-color: #246b7a;
+  --subtitle-color: #8aa1aa;
+  --db-color: #21aee4;
+  --time-color: #20c997;
+  --sky-top: #7bd3f4;
+  --sky-bottom: #b8efff;
+  --ground-top-line: #38c984;
+  --ground-start: #8ff0b5;
+  --ground-end: #c7f8d4;
+  --shadow: 0 12px 30px rgba(60, 140, 180, 0.12);
+  --team-a: #ff6b8a;
+  --team-a-light: #fff0f3;
+  --team-a-border: #ffb3c4;
+  --team-b: #4dabf7;
+  --team-b-light: #f0f7ff;
+  --team-b-border: #a5d8ff;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--page-bg);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 20px 16px;
+}
+
+.app {
+  max-width: 1200px;
+  width: 100%;
+  background: var(--card-bg);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+
+/* ─── 顶部标题 ─── */
+.header { text-align: center; margin-bottom: 12px; }
+.header h1 { font-size: 30px; font-weight: 700; color: var(--title-color); }
+.header h1 span { color: var(--pink); }
+.header p { font-size: 15px; color: var(--subtitle-color); margin-top: 6px; }
+
+/* ─── 朗读任务条 ─── */
+.task-bar {
+  display: none;
+  background: linear-gradient(135deg, #fff8e1, #fff3cd);
+  border: 1px solid #f5d88a;
+  border-radius: 14px;
+  padding: 12px 20px;
+  margin-bottom: 14px;
+  font-size: 15px;
+  color: #7a6020;
+  line-height: 1.6;
+  position: relative;
+}
+.task-bar.active { display: block; }
+.task-bar .task-label {
+  font-weight: 700;
+  color: #b8860b;
+  margin-right: 8px;
+}
+.task-bar .task-close {
+  position: absolute;
+  right: 12px;
+  top: 8px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #b8a060;
+  line-height: 1;
+}
+
+/* ─── PK 对战区域 ─── */
+.arena {
+  display: grid;
+  grid-template-columns: 1fr 60px 1fr;
+  gap: 0;
+  align-items: stretch;
+  margin-bottom: 14px;
+}
+
+.team-zone {
+  border-radius: 24px;
+  overflow: hidden;
+  position: relative;
+  border: 3px solid transparent;
+  transition: border-color 0.3s;
+}
+.team-zone.leading-a { border-color: var(--team-a); }
+.team-zone.leading-b { border-color: var(--team-b); }
+
+/* ─── 队伍标签 ─── */
+.team-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  font-weight: 700;
+  font-size: 16px;
+  color: #fff;
+}
+.team-a .team-label { background: var(--team-a); }
+.team-b .team-label { background: var(--team-b); }
+
+.team-label .team-name-input {
+  background: rgba(255,255,255,0.25);
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 2px 10px;
+  width: 100px;
+  text-align: center;
+  outline: none;
+}
+.team-label .team-name-input::placeholder { color: rgba(255,255,255,0.7); }
+.team-label .team-name-input:focus { background: rgba(255,255,255,0.35); }
+
+.team-label .db-badge {
+  background: rgba(255,255,255,0.3);
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ─── 动物园 ─── */
+.zoo {
+  position: relative;
+  width: 100%;
+  height: 380px;
+  background: linear-gradient(to bottom, var(--sky-top), var(--sky-bottom));
+}
+.zoo-ground {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 40px;
+  background: linear-gradient(to bottom, var(--ground-start), var(--ground-end));
+  border-top: 3px solid var(--ground-top-line);
+}
+
+/* ─── 队伍统计条 ─── */
+.team-stats {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #667;
+  background: #fafcff;
+}
+.team-stats .stat { text-align: center; }
+.team-stats .stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  display: block;
+}
+.team-a .stat-value { color: var(--team-a); }
+.team-b .stat-value { color: var(--team-b); }
+
+/* ─── VS 中间分隔 ─── */
+.vs-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+.vs-text {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--pink);
+  text-shadow: 0 2px 8px rgba(255,79,115,0.3);
+  animation: vsPulse 2s ease-in-out infinite;
+}
+@keyframes vsPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+/* ─── 底部控制栏 ─── */
+.bottom-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+}
+
+.pk-timer {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--title-color);
+  min-width: 100px;
+  text-align: center;
+}
+.pk-timer .label { font-size: 12px; color: var(--subtitle-color); font-weight: 500; }
+.pk-timer.countdown .timer-value { color: var(--pink); }
+.pk-timer.countdown.urgent .timer-value { animation: urgentPulse 0.5s ease-in-out infinite; }
+@keyframes urgentPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.leading-banner {
+  width: 100%;
+  text-align: center;
+  padding: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 12px;
+  margin-top: 4px;
+  transition: all 0.3s;
+}
+.leading-banner.team-a-lead { background: var(--team-a-light); color: var(--team-a); border: 1px solid var(--team-a-border); }
+.leading-banner.team-b-lead { background: var(--team-b-light); color: var(--team-b); border: 1px solid var(--team-b-border); }
+.leading-banner.tie { background: #f0fdf4; color: var(--green); border: 1px solid #b2f5ea; }
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 48px;
+  padding: 0 20px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+.btn-settings { background: #fff; color: var(--blue); border: 2px solid var(--blue); }
+.btn-settings:hover { background: #f0f7ff; }
+.btn-pause { background: var(--pink); color: #fff; box-shadow: 0 4px 12px rgba(255,79,115,0.3); }
+.btn-pause:hover { background: #e84468; }
+.btn-resume { background: var(--green); color: #fff; box-shadow: 0 4px 12px rgba(32,201,151,0.3); }
+.btn-resume:hover { background: #1ab585; }
+.btn-end { background: var(--orange); color: #fff; box-shadow: 0 4px 12px rgba(245,166,35,0.3); }
+.btn-end:hover { background: #e09520; }
+.btn-restart { background: var(--blue); color: #fff; box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+.btn-restart:hover { background: #2563eb; }
+
+/* ─── 开始设置面板 ─── */
+.start-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 3000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.start-overlay.hidden { display: none; }
+
+.start-card {
+  width: 600px;
+  max-width: 92vw;
+  background: #fff;
+  border-radius: 28px;
+  padding: 36px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+  animation: modalPop 0.3s ease-out;
+}
+
+.start-card h2 {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--title-color);
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.start-section { margin-bottom: 24px; }
+.start-section label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #3a5a6a;
+  margin-bottom: 8px;
+}
+
+.team-name-row {
+  display: grid;
+  grid-template-columns: 1fr 40px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+.team-name-row input {
+  height: 48px;
+  border-radius: 14px;
+  border: 2px solid #e0eef5;
+  padding: 0 16px;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.team-name-row input:focus { border-color: var(--blue); }
+.team-name-row .input-a { color: var(--team-a); border-color: var(--team-a-border); }
+.team-name-row .input-b { color: var(--team-b); border-color: var(--team-b-border); }
+.team-name-row .vs-small { text-align: center; font-weight: 900; color: var(--pink); font-size: 18px; }
+
+.time-options {
+  display: flex;
+  gap: 10px;
+}
+.time-option {
+  flex: 1;
+  height: 48px;
+  border-radius: 14px;
+  border: 2px solid #e0eef5;
+  background: #fafcff;
+  font-size: 15px;
+  font-weight: 600;
+  color: #5a7a8a;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.time-option:hover { border-color: var(--blue); color: var(--blue); }
+.time-option.active { border-color: var(--blue); background: #f0f7ff; color: var(--blue); }
+
+.start-card textarea {
+  width: 100%;
+  height: 80px;
+  border-radius: 14px;
+  border: 2px solid #e0eef5;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+  color: #3a5a6a;
+}
+.start-card textarea:focus { border-color: var(--blue); }
+.start-card textarea::placeholder { color: #b0c0cc; }
+
+.start-footer {
+  text-align: center;
+  margin-top: 28px;
+}
+.btn-start {
+  height: 56px;
+  padding: 0 48px;
+  border-radius: 16px;
+  border: none;
+  background: linear-gradient(135deg, var(--team-a), var(--pink));
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(255,79,115,0.35);
+  transition: all 0.2s;
+}
+.btn-start:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255,79,115,0.4); }
+
+/* ─── 结果弹窗 ─── */
+.result-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 2000;
+  justify-content: center;
+  align-items: center;
+}
+.result-overlay.active { display: flex; }
+
+.result-card {
+  width: 560px;
+  max-width: 92vw;
+  background: #fff;
+  border-radius: 28px;
+  padding: 40px 32px;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+  animation: modalPop 0.3s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+.result-card h2 { font-size: 32px; font-weight: 800; margin-bottom: 24px; }
+.result-card h2.a-win { color: var(--team-a); }
+.result-card h2.b-win { color: var(--team-b); }
+.result-card h2.draw { color: var(--orange); }
+
+.result-scores {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.result-team { padding: 20px; border-radius: 20px; }
+.result-team.team-a-result { background: var(--team-a-light); border: 2px solid var(--team-a-border); }
+.result-team.team-b-result { background: var(--team-b-light); border: 2px solid var(--team-b-border); }
+.result-team .r-name { font-size: 14px; color: #667; margin-bottom: 8px; }
+.result-team .score { font-size: 48px; font-weight: 800; }
+.result-team.team-a-result .score { color: var(--team-a); }
+.result-team.team-b-result .score { color: var(--team-b); }
+.result-team .score-label { font-size: 12px; color: #8aa1aa; }
+.result-vs { font-size: 24px; font-weight: 900; color: #ccc; }
+
+.result-details {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #667;
+  flex-wrap: wrap;
+}
+.result-actions { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
+
+/* ─── 撒花庆祝 ─── */
+.confetti-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 10;
+}
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  top: -10px;
+  animation: confettiFall linear forwards;
+}
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(500px) rotate(720deg); opacity: 0; }
+}
+
+/* ─── 动物贴纸基础 ─── */
+.animal-sticker {
+  position: absolute;
+  border-radius: 50%;
+  animation: animalAppear 0.4s ease-out forwards, animalFloat 3s ease-in-out infinite;
+  cursor: default;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));
+}
+
+@keyframes animalAppear {
+  0% { opacity: 0; transform: scale(0.5); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes animalFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  33% { transform: translateY(-5px) rotate(2deg); }
+  66% { transform: translateY(3px) rotate(-1.5deg); }
+}
+
+.animal-sticker .face { position: relative; width: 100%; height: 100%; border-radius: 50%; }
+.animal-sticker .ear { position: absolute; }
+.animal-sticker .eye { position: absolute; width: 14%; height: 14%; border-radius: 50%; background: #2d2d2d; }
+.animal-sticker .eye.left { left: 25%; top: 36%; }
+.animal-sticker .eye.right { right: 25%; top: 36%; }
+.animal-sticker .eye::after { content: ''; position: absolute; width: 40%; height: 40%; background: white; border-radius: 50%; top: 15%; left: 15%; }
+.animal-sticker .blush { position: absolute; width: 18%; height: 12%; border-radius: 50%; background: rgba(255,150,170,0.45); }
+.animal-sticker .blush.left { left: 15%; top: 52%; }
+.animal-sticker .blush.right { right: 15%; top: 52%; }
+.animal-sticker .nose { position: absolute; left: 50%; top: 48%; transform: translateX(-50%); }
+.animal-sticker .mouth { position: absolute; left: 50%; top: 58%; transform: translateX(-50%); }
+
+/* ─── 小狗 dog ─── */
+.animal-sticker.dog .face { background: #fae3c8; }
+.animal-sticker.dog .ear { width: 28%; height: 32%; border-radius: 50%; background: #b87a3d; top: -12%; }
+.animal-sticker.dog .ear.left { left: 2%; transform: rotate(-15deg); }
+.animal-sticker.dog .ear.right { right: 2%; transform: rotate(15deg); }
+.animal-sticker.dog .nose { width: 16%; height: 12%; background: #3a3a3a; border-radius: 50%; }
+.animal-sticker.dog .mouth { width: 20%; height: 8%; border-bottom: 2px solid #8b6b4a; border-radius: 0 0 50% 50%; }
+
+/* ─── 小猫 cat ─── */
+.animal-sticker.cat .face { background: #fbc76b; }
+.animal-sticker.cat .ear { width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 16px solid #e8a832; top: -10%; }
+.animal-sticker.cat .ear.left { left: 12%; }
+.animal-sticker.cat .ear.right { right: 12%; }
+.animal-sticker.cat .nose { width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid #d47a5a; margin-top: -2%; }
+.animal-sticker.cat .mouth { width: 16%; height: 6%; border-bottom: 2px solid #b87a3d; border-radius: 0 0 50% 50%; }
+.animal-sticker.cat .whisker { position: absolute; width: 22%; height: 1px; background: #b87a3d; top: 55%; }
+.animal-sticker.cat .whisker.l1 { left: -8%; transform: rotate(-5deg); }
+.animal-sticker.cat .whisker.l2 { left: -6%; top: 59%; transform: rotate(5deg); }
+.animal-sticker.cat .whisker.r1 { right: -8%; transform: rotate(5deg); }
+.animal-sticker.cat .whisker.r2 { right: -6%; top: 59%; transform: rotate(-5deg); }
+
+/* ─── 兔兔 rabbit ─── */
+.animal-sticker.rabbit .face { background: #fff5f5; }
+.animal-sticker.rabbit .ear { width: 18%; height: 44%; border-radius: 40%; background: #fff; top: -34%; border: 2px solid #f0d0d0; overflow: hidden; }
+.animal-sticker.rabbit .ear.left { left: 18%; transform: rotate(-8deg); }
+.animal-sticker.rabbit .ear.right { right: 18%; transform: rotate(8deg); }
+.animal-sticker.rabbit .ear::after { content: ''; position: absolute; width: 55%; height: 65%; border-radius: 40%; background: #ffb6c8; top: 20%; left: 22%; }
+.animal-sticker.rabbit .nose { width: 10%; height: 8%; background: #ffb0b0; border-radius: 50%; }
+.animal-sticker.rabbit .mouth { width: 14%; height: 6%; border-bottom: 2px solid #d4a0a0; border-radius: 0 0 50% 50%; }
+.animal-sticker.rabbit .eye { background: #c0465a; }
+
+/* ─── 小熊 bear ─── */
+.animal-sticker.bear .face { background: #a0764e; }
+.animal-sticker.bear .ear { width: 26%; height: 26%; border-radius: 50%; background: #8b6340; top: -8%; }
+.animal-sticker.bear .ear.left { left: 2%; }
+.animal-sticker.bear .ear.right { right: 2%; }
+.animal-sticker.bear .muzzle { position: absolute; width: 44%; height: 34%; background: #f0dfc0; border-radius: 50%; left: 28%; top: 50%; }
+.animal-sticker.bear .nose { width: 14%; height: 10%; background: #3a3a3a; border-radius: 50%; top: 42%; }
+.animal-sticker.bear .mouth { width: 18%; height: 8%; border-bottom: 2px solid #8b6b4a; border-radius: 0 0 50% 50%; top: 64%; }
+
+/* ─── 熊猫 panda ─── */
+.animal-sticker.panda .face { background: #fff; border: 2px solid #e0e0e0; }
+.animal-sticker.panda .ear { width: 26%; height: 26%; border-radius: 50%; background: #2d2d2d; top: -8%; }
+.animal-sticker.panda .ear.left { left: 2%; }
+.animal-sticker.panda .ear.right { right: 2%; }
+.animal-sticker.panda .eye-patch { position: absolute; width: 22%; height: 20%; background: #2d2d2d; border-radius: 50%; top: 30%; }
+.animal-sticker.panda .eye-patch.left { left: 16%; transform: rotate(-10deg); }
+.animal-sticker.panda .eye-patch.right { right: 16%; transform: rotate(10deg); }
+.animal-sticker.panda .eye-patch .eye-inner { position: absolute; width: 40%; height: 40%; background: #fff; border-radius: 50%; top: 30%; left: 30%; }
+.animal-sticker.panda .eye-patch .eye-inner::after { content:''; position:absolute; width:50%; height:50%; background:#2d2d2d; border-radius:50%; top:25%; left:25%; }
+.animal-sticker.panda .nose { width: 14%; height: 10%; background: #2d2d2d; border-radius: 50%; }
+.animal-sticker.panda .mouth { width: 16%; height: 6%; border-bottom: 2px solid #888; border-radius: 0 0 50% 50%; }
+
+/* ─── 小虎 tiger ─── */
+.animal-sticker.tiger .face { background: #f5a623; }
+.animal-sticker.tiger .ear { width: 24%; height: 24%; border-radius: 50%; background: #e8952a; top: -6%; }
+.animal-sticker.tiger .ear.left { left: 4%; }
+.animal-sticker.tiger .ear.right { right: 4%; }
+.animal-sticker.tiger .stripe { position: absolute; background: #8b5e14; border-radius: 2px; }
+.animal-sticker.tiger .stripe.s1 { width: 30%; height: 4%; top: 16%; left: 35%; }
+.animal-sticker.tiger .stripe.s2 { width: 20%; height: 4%; top: 22%; left: 20%; transform: rotate(-15deg); }
+.animal-sticker.tiger .stripe.s3 { width: 20%; height: 4%; top: 22%; right: 20%; transform: rotate(15deg); }
+.animal-sticker.tiger .muzzle { position: absolute; width: 44%; height: 34%; background: #fff8e8; border-radius: 50%; left: 28%; top: 50%; }
+.animal-sticker.tiger .nose { width: 14%; height: 10%; background: #5a3e1e; border-radius: 50%; top: 42%; }
+.animal-sticker.tiger .mouth { width: 18%; height: 8%; border-bottom: 2px solid #8b6b4a; border-radius: 0 0 50% 50%; top: 64%; }
+
+/* ─── 狮子 lion ─── */
+.animal-sticker.lion .mane { position: absolute; width: 130%; height: 130%; left: -15%; top: -15%; background: radial-gradient(circle, #d4882a 40%, #c07020 70%, transparent 72%); border-radius: 50%; }
+.animal-sticker.lion .face { position: relative; width: 100%; height: 100%; border-radius: 50%; background: #fae0a0; z-index: 1; }
+.animal-sticker.lion .ear { width: 22%; height: 22%; border-radius: 50%; background: #c88a30; top: 2%; z-index: 1; }
+.animal-sticker.lion .ear.left { left: 8%; }
+.animal-sticker.lion .ear.right { right: 8%; }
+.animal-sticker.lion .eye { z-index: 1; }
+.animal-sticker.lion .blush { z-index: 1; }
+.animal-sticker.lion .nose { width: 14%; height: 10%; background: #8b5e30; border-radius: 50%; z-index: 1; }
+.animal-sticker.lion .mouth { width: 16%; height: 6%; border-bottom: 2px solid #8b6b4a; border-radius: 0 0 50% 50%; z-index: 1; }
+
+/* ─── 小猪 pig ─── */
+.animal-sticker.pig .face { background: #ffb6c8; }
+.animal-sticker.pig .ear { width: 24%; height: 24%; border-radius: 50%; background: #ff9ab0; top: -6%; }
+.animal-sticker.pig .ear.left { left: 4%; transform: rotate(-20deg); }
+.animal-sticker.pig .ear.right { right: 4%; transform: rotate(20deg); }
+.animal-sticker.pig .snout { position: absolute; width: 36%; height: 24%; background: #ff9ab0; border-radius: 50%; left: 32%; top: 46%; z-index: 1; }
+.animal-sticker.pig .nostril { position: absolute; width: 8%; height: 10%; background: #e07a90; border-radius: 50%; top: 52%; z-index: 2; }
+.animal-sticker.pig .nostril.left { left: 36%; }
+.animal-sticker.pig .nostril.right { right: 36%; }
+.animal-sticker.pig .nose { display: none; }
+.animal-sticker.pig .mouth { width: 16%; height: 6%; border-bottom: 2px solid #d47a90; border-radius: 0 0 50% 50%; top: 68%; }
+
+/* ─── 青蛙 frog ─── */
+.animal-sticker.frog .face { background: #6ecf6e; }
+.animal-sticker.frog .eye-bump { position: absolute; width: 28%; height: 28%; border-radius: 50%; background: #5cb85c; top: -14%; }
+.animal-sticker.frog .eye-bump.left { left: 8%; }
+.animal-sticker.frog .eye-bump.right { right: 8%; }
+.animal-sticker.frog .eye-bump .eye-inner { position: absolute; width: 60%; height: 60%; background: #fff; border-radius: 50%; top: 20%; left: 20%; }
+.animal-sticker.frog .eye-bump .eye-inner::after { content:''; position:absolute; width:50%; height:50%; background:#2d2d2d; border-radius:50%; top:25%; left:30%; }
+.animal-sticker.frog .eye { display: none; }
+.animal-sticker.frog .nose { width: 6%; height: 5%; background: #4a9e4a; border-radius: 50%; top: 44%; }
+.animal-sticker.frog .mouth { width: 40%; height: 10%; border-bottom: 3px solid #4a9e4a; border-radius: 0 0 50% 50%; top: 56%; }
+
+/* ─── 猴子 monkey ─── */
+.animal-sticker.monkey .face { background: #a0764e; }
+.animal-sticker.monkey .ear { width: 26%; height: 26%; border-radius: 50%; background: #8b6340; top: 28%; }
+.animal-sticker.monkey .ear.left { left: -8%; }
+.animal-sticker.monkey .ear.right { right: -8%; }
+.animal-sticker.monkey .ear::after { content:''; position:absolute; width:55%; height:55%; background:#f0dfc0; border-radius:50%; top:22%; left:22%; }
+.animal-sticker.monkey .inner-face { position: absolute; width: 64%; height: 58%; background: #f0dfc0; border-radius: 50%; left: 18%; top: 30%; }
+.animal-sticker.monkey .eye { z-index: 1; }
+.animal-sticker.monkey .blush { z-index: 1; }
+.animal-sticker.monkey .nose { width: 8%; height: 6%; background: #8b6340; border-radius: 50%; z-index: 1; }
+.animal-sticker.monkey .mouth { width: 16%; height: 6%; border-bottom: 2px solid #8b6b4a; border-radius: 0 0 50% 50%; z-index: 1; top: 66%; }
+
+/* ─── 小鸡 chick ─── */
+.animal-sticker.chick .face { background: #ffe066; }
+.animal-sticker.chick .hair { position: absolute; top: -6%; left: 50%; transform: translateX(-50%); display: flex; gap: 2px; }
+.animal-sticker.chick .hair span { width: 3px; height: 14px; background: #f5a623; border-radius: 2px; }
+.animal-sticker.chick .hair span:nth-child(1) { transform: rotate(-15deg); height: 12px; }
+.animal-sticker.chick .hair span:nth-child(2) { height: 16px; }
+.animal-sticker.chick .hair span:nth-child(3) { transform: rotate(15deg); height: 12px; }
+.animal-sticker.chick .beak { position: absolute; width: 14%; height: 8%; background: #f5a623; border-radius: 50%; left: 43%; top: 52%; }
+.animal-sticker.chick .nose { display: none; }
+.animal-sticker.chick .mouth { display: none; }
+.animal-sticker.chick .wing { position: absolute; width: 22%; height: 18%; background: #ffd633; border-radius: 50% 50% 30% 30%; top: 55%; }
+.animal-sticker.chick .wing.left { left: -4%; transform: rotate(15deg); }
+.animal-sticker.chick .wing.right { right: -4%; transform: rotate(-15deg); }
+
+/* ─── 企鹅 penguin ─── */
+.animal-sticker.penguin .face { background: #3a4a5c; }
+.animal-sticker.penguin .belly { position: absolute; width: 66%; height: 58%; background: #f0f0f0; border-radius: 50%; left: 17%; top: 30%; }
+.animal-sticker.penguin .eye { z-index: 1; background: #2d2d2d; }
+.animal-sticker.penguin .beak { position: absolute; width: 14%; height: 8%; background: #f5c542; border-radius: 50%; left: 43%; top: 50%; z-index: 1; }
+.animal-sticker.penguin .nose { display: none; }
+.animal-sticker.penguin .mouth { display: none; }
+.animal-sticker.penguin .blush { z-index: 1; }
+
+/* ─── 设置弹窗 ─── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+.modal-overlay.active { display: flex; }
+
+@keyframes modalPop {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.modal {
+  width: 660px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  animation: modalPop 0.25s ease-out;
+}
+.modal h2 { font-size: 28px; font-weight: 700; color: #2d4a5a; margin-bottom: 24px; }
+.settings-section { margin-bottom: 24px; }
+.settings-section h4 { font-size: 16px; font-weight: 600; color: #3a5a6a; margin-bottom: 12px; }
+
+.speed-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; color: #8aa1aa; }
+.speed-row .center-text { font-size: 15px; font-weight: 600; color: var(--title-color); }
+.speed-hint { font-size: 12px; color: #aab; margin-top: 6px; }
+
+.slider-container input[type="range"] {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: #e0eef5;
+  outline: none;
+}
+.slider-container input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--blue);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(59,130,246,0.3);
+}
+
+.threshold-row { display: flex; align-items: center; gap: 12px; }
+.threshold-row .value { font-size: 20px; font-weight: 700; color: var(--db-color); min-width: 60px; text-align: center; }
+
+.animal-select-actions { display: flex; gap: 8px; margin-bottom: 12px; }
+.animal-select-actions button {
+  padding: 6px 16px;
+  border-radius: 10px;
+  border: 1px solid #d0dde5;
+  background: #f5fafd;
+  color: #4a7a8a;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.animal-select-actions button:hover { background: #e0f0f8; border-color: var(--blue); color: var(--blue); }
+
+.animal-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  border: 1px solid #e0eef5;
+  border-radius: 16px;
+  padding: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+  background: #fafcff;
+}
+
+.animal-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 6px;
+  border-radius: 16px;
+  border: 2px solid #e8eef2;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+}
+.animal-option:hover { border-color: #b0d0e0; }
+.animal-option.selected { border-color: var(--blue); background: #f0f7ff; }
+.animal-option input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--blue); }
+.animal-option .sticker-wrapper { position: relative; width: 48px; height: 48px; }
+.animal-option .sticker-wrapper .animal-sticker { position: relative; animation: none; }
+.animal-option .name { font-size: 12px; color: #5a7a8a; font-weight: 500; }
+.animal-select-hint { font-size: 12px; color: #aab; margin-top: 8px; }
+
+.modal-footer { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+.btn-reset { padding: 12px 24px; border-radius: 14px; border: none; background: #e8eef2; color: #5a6a7a; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-reset:hover { background: #d8e2e8; }
+.btn-save { padding: 12px 28px; border-radius: 14px; border: none; background: var(--blue); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(59,130,246,0.3); transition: all 0.2s; }
+.btn-save:hover { background: #2563eb; }
+.error-msg { display: none; color: var(--pink); font-size: 13px; margin-top: 8px; text-align: center; }
+.error-msg.show { display: block; }
+
+/* ─── 响应式 ─── */
+@media (max-width: 768px) {
+  body { padding: 10px 6px; }
+  .app { padding: 14px; }
+  .header h1 { font-size: 22px; }
+  .arena { grid-template-columns: 1fr 40px 1fr; }
+  .zoo { height: 280px; }
+  .team-label { font-size: 14px; padding: 8px 10px; }
+  .team-stats { padding: 8px; }
+  .team-stats .stat-value { font-size: 16px; }
+  .vs-text { font-size: 20px; }
+  .pk-timer { font-size: 22px; }
+  .bottom-bar { gap: 8px; }
+  .btn { height: 42px; padding: 0 14px; font-size: 13px; }
+  .animal-grid { grid-template-columns: repeat(3, 1fr); }
+  .result-card { padding: 28px 20px; }
+  .result-team .score { font-size: 36px; }
+  .team-name-row { grid-template-columns: 1fr 30px 1fr; }
+  .team-name-row input { font-size: 14px; }
+  .time-options { gap: 6px; }
+  .time-option { font-size: 13px; height: 42px; }
+  .start-card { padding: 24px 20px; }
+}
+
+@media (max-width: 480px) {
+  .arena { grid-template-columns: 1fr 30px 1fr; }
+  .zoo { height: 220px; }
+  .animal-grid { grid-template-columns: repeat(2, 1fr); }
+  .time-options { flex-wrap: wrap; }
+  .time-option { flex: none; width: calc(50% - 3px); }
+}
+</style>
+</head>
+<body>
+
+<!-- ─── 开始设置面板 ─── -->
+<div class="start-overlay" id="startOverlay">
+  <div class="start-card">
+    <h2>声动动物园 · 分组PK</h2>
+
+    <div class="start-section">
+      <label>队伍名称</label>
+      <div class="team-name-row">
+        <input type="text" class="input-a" id="nameA" placeholder="A 组" maxlength="6">
+        <span class="vs-small">VS</span>
+        <input type="text" class="input-b" id="nameB" placeholder="B 组" maxlength="6">
+      </div>
+    </div>
+
+    <div class="start-section">
+      <label>PK 时长</label>
+      <div class="time-options">
+        <button class="time-option" data-time="60">1 分钟</button>
+        <button class="time-option active" data-time="180">3 分钟</button>
+        <button class="time-option" data-time="300">5 分钟</button>
+        <button class="time-option" data-time="0">不限时</button>
+      </div>
+    </div>
+
+    <div class="start-section">
+      <label>朗读内容（选填，显示在页面上方）</label>
+      <textarea id="taskInput" placeholder="例：请大家朗读第3课《小蝌蚪找妈妈》全文"></textarea>
+    </div>
+
+    <div class="start-footer">
+      <button class="btn-start" id="btnStartPK">开始PK</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── 主应用 ─── -->
+<div class="app">
+  <div class="header">
+    <h1>声动动物园 · <span>分组PK</span></h1>
+    <p>大声朗读，为你组赢得更多小动物！</p>
+  </div>
+
+  <div class="task-bar" id="taskBar">
+    <span class="task-label">朗读任务：</span>
+    <span id="taskText"></span>
+    <button class="task-close" id="taskClose">&times;</button>
+  </div>
+
+  <div class="arena">
+    <div class="team-zone team-a" id="zoneA">
+      <div class="team-label">
+        <span id="labelA">A 组</span>
+        <span class="db-badge" id="dbA">🔊 35 dB</span>
+      </div>
+      <div class="zoo" id="zooA"><div class="zoo-ground"></div></div>
+      <div class="team-stats">
+        <div class="stat"><span class="stat-value" id="countA">0</span>只动物</div>
+        <div class="stat"><span class="stat-value" id="avgDbA">0</span>平均分贝</div>
+      </div>
+    </div>
+
+    <div class="vs-divider"><span class="vs-text">VS</span></div>
+
+    <div class="team-zone team-b" id="zoneB">
+      <div class="team-label">
+        <span id="labelB">B 组</span>
+        <span class="db-badge" id="dbB">🔊 35 dB</span>
+      </div>
+      <div class="zoo" id="zooB"><div class="zoo-ground"></div></div>
+      <div class="team-stats">
+        <div class="stat"><span class="stat-value" id="countB">0</span>只动物</div>
+        <div class="stat"><span class="stat-value" id="avgDbB">0</span>平均分贝</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="leading-banner tie" id="leadingBanner">势均力敌，加油朗读！</div>
+
+  <div class="bottom-bar">
+    <div class="pk-timer" id="pkTimerWrap">
+      <div class="label">PK 时间</div>
+      <div class="timer-value" id="timeDisplay">03:00</div>
+    </div>
+    <button class="btn btn-pause" id="btnPause">⏸ 暂停</button>
+    <button class="btn btn-end" id="btnEnd">🏁 结束PK</button>
+    <button class="btn btn-settings" id="btnSettings">⚙ 设置</button>
+  </div>
+</div>
+
+<!-- 设置弹窗 -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2>动物园设置</h2>
+    <div class="settings-section">
+      <h4>分贝阈值</h4>
+      <div class="threshold-row">
+        <span>0 dB</span>
+        <div class="slider-container" style="flex:1"><input type="range" id="thresholdSlider" min="0" max="100" value="10"></div>
+        <span>100 dB</span>
+        <span class="value" id="thresholdValue">10 dB</span>
+      </div>
+      <div class="speed-hint">只有分贝超过阈值时才生成动物</div>
+    </div>
+    <div class="settings-section">
+      <h4>动物生成速度</h4>
+      <div class="speed-row">
+        <span>最快 (1秒)</span>
+        <span class="center-text" id="speedDisplay">1秒生成一只</span>
+        <span>最慢 (60秒)</span>
+      </div>
+      <div class="slider-container"><input type="range" id="speedSlider" min="1" max="60" value="1"></div>
+      <div class="speed-hint">调节动物在噪音环境中的生成频率</div>
+    </div>
+    <div class="settings-section">
+      <h4>选择动物种类</h4>
+      <div class="animal-select-actions">
+        <button id="btnSelectAll">全选</button>
+        <button id="btnSelectNone">全不选</button>
+      </div>
+      <div class="animal-grid" id="animalGrid"></div>
+      <div class="animal-select-hint">选择你希望出现的动物种类（至少选择一种）</div>
+      <div class="error-msg" id="errorMsg">请至少选择一种动物</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-reset" id="btnReset">重置默认</button>
+      <button class="btn-save" id="btnSave">保存设置</button>
+    </div>
+  </div>
+</div>
+
+<!-- 结果弹窗 -->
+<div class="result-overlay" id="resultOverlay">
+  <div class="result-card" id="resultCard">
+    <div class="confetti-container" id="confettiBox"></div>
+    <h2 id="resultTitle">PK 结果</h2>
+    <div class="result-scores">
+      <div class="result-team team-a-result">
+        <div class="r-name" id="rNameA">A 组</div>
+        <div class="score" id="resultScoreA">0</div>
+        <div class="score-label">只动物</div>
+      </div>
+      <div class="result-vs">VS</div>
+      <div class="result-team team-b-result">
+        <div class="r-name" id="rNameB">B 组</div>
+        <div class="score" id="resultScoreB">0</div>
+        <div class="score-label">只动物</div>
+      </div>
+    </div>
+    <div class="result-details">
+      <span>平均分贝：<strong id="resultAvgA">0</strong></span>
+      <span>PK 时长：<strong id="resultTime">00:00</strong></span>
+      <span>平均分贝：<strong id="resultAvgB">0</strong></span>
+    </div>
+    <div class="result-actions">
+      <button class="btn btn-restart" id="btnRestart">再来一局</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── 动物数据 ───
+const animals = [
+  { id: 'dog', name: '小狗' }, { id: 'cat', name: '小猫' },
+  { id: 'rabbit', name: '兔兔' }, { id: 'bear', name: '小熊' },
+  { id: 'panda', name: '熊猫' }, { id: 'tiger', name: '小虎' },
+  { id: 'lion', name: '狮子' }, { id: 'pig', name: '小猪' },
+  { id: 'frog', name: '青蛙' }, { id: 'monkey', name: '猴子' },
+  { id: 'chick', name: '小鸡' }, { id: 'penguin', name: '企鹅' }
+];
+
+// ─── 全局状态 ───
+const state = {
+  started: false,
+  isRunning: false,
+  dbThreshold: 10,
+  spawnInterval: 1,
+  selectedAnimalIds: animals.map(a => a.id),
+  maxAnimals: 40,
+  pkTotalSeconds: 180, // PK总时长，0=不限时
+  pkRemaining: 180,    // 剩余秒数
+  pkElapsed: 0,        // 已过秒数
+  teamNameA: 'A 组',
+  teamNameB: 'B 组',
+  // 动态偏差：让两组分贝有差异感
+  biasA: 0,
+  biasB: 0,
+  biasPhase: 0,
+  teams: {
+    a: { currentDb: 35, totalDb: 0, dbCount: 0, animalCount: 0 },
+    b: { currentDb: 35, totalDb: 0, dbCount: 0, animalCount: 0 }
+  }
+};
+
+// ─── 定时器 ───
+let dbTimer = null;
+let timeTimer = null;
+let spawnTimerA = null;
+let spawnTimerB = null;
+
+// ─── DOM ───
+const startOverlay = document.getElementById('startOverlay');
+const nameAInput = document.getElementById('nameA');
+const nameBInput = document.getElementById('nameB');
+const taskInput = document.getElementById('taskInput');
+const btnStartPK = document.getElementById('btnStartPK');
+const taskBar = document.getElementById('taskBar');
+const taskText = document.getElementById('taskText');
+const taskClose = document.getElementById('taskClose');
+const zooA = document.getElementById('zooA');
+const zooB = document.getElementById('zooB');
+const dbAEl = document.getElementById('dbA');
+const dbBEl = document.getElementById('dbB');
+const countAEl = document.getElementById('countA');
+const countBEl = document.getElementById('countB');
+const avgDbAEl = document.getElementById('avgDbA');
+const avgDbBEl = document.getElementById('avgDbB');
+const labelA = document.getElementById('labelA');
+const labelB = document.getElementById('labelB');
+const zoneA = document.getElementById('zoneA');
+const zoneB = document.getElementById('zoneB');
+const timeDisplay = document.getElementById('timeDisplay');
+const pkTimerWrap = document.getElementById('pkTimerWrap');
+const leadingBanner = document.getElementById('leadingBanner');
+const btnPause = document.getElementById('btnPause');
+const btnEnd = document.getElementById('btnEnd');
+const btnSettings = document.getElementById('btnSettings');
+const modalOverlay = document.getElementById('modalOverlay');
+const speedSlider = document.getElementById('speedSlider');
+const speedDisplay = document.getElementById('speedDisplay');
+const thresholdSlider = document.getElementById('thresholdSlider');
+const thresholdValue = document.getElementById('thresholdValue');
+const animalGrid = document.getElementById('animalGrid');
+const btnSelectAll = document.getElementById('btnSelectAll');
+const btnSelectNone = document.getElementById('btnSelectNone');
+const btnReset = document.getElementById('btnReset');
+const btnSave = document.getElementById('btnSave');
+const errorMsg = document.getElementById('errorMsg');
+const resultOverlay = document.getElementById('resultOverlay');
+const resultCard = document.getElementById('resultCard');
+const confettiBox = document.getElementById('confettiBox');
+const btnRestart = document.getElementById('btnRestart');
+
+// ─── 开始面板：时间选择 ───
+document.querySelectorAll('.time-option').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.time-option').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+// ─── 开始PK ───
+btnStartPK.addEventListener('click', () => {
+  state.teamNameA = nameAInput.value.trim() || 'A 组';
+  state.teamNameB = nameBInput.value.trim() || 'B 组';
+
+  const activeTime = document.querySelector('.time-option.active');
+  state.pkTotalSeconds = parseInt(activeTime.dataset.time);
+  state.pkRemaining = state.pkTotalSeconds || 0;
+  state.pkElapsed = 0;
+
+  labelA.textContent = state.teamNameA;
+  labelB.textContent = state.teamNameB;
+
+  // 朗读任务
+  const task = taskInput.value.trim();
+  if (task) {
+    taskText.textContent = task;
+    taskBar.classList.add('active');
+  }
+
+  startOverlay.classList.add('hidden');
+  updateTimerDisplay();
+  startMonitoring();
+});
+
+// ─── 关闭朗读任务条 ───
+taskClose.addEventListener('click', () => {
+  taskBar.classList.remove('active');
+});
+
+// ─── 工具函数 ───
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function formatTime(totalSeconds) {
+  const m = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+  const s = String(totalSeconds % 60).padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function formatTimeFull(totalSeconds) {
+  const h = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+  const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+  const s = String(totalSeconds % 60).padStart(2, '0');
+  return h === '00' ? `${m}:${s}` : `${h}:${m}:${s}`;
+}
+
+// ─── 创建动物贴纸 ───
+function createAnimalSticker(animalId, size) {
+  size = size || 56;
+  const el = document.createElement('div');
+  el.className = `animal-sticker ${animalId}`;
+  el.style.width = size + 'px';
+  el.style.height = size + 'px';
+
+  let extras = '';
+  if (animalId === 'cat') extras = '<span class="whisker l1"></span><span class="whisker l2"></span><span class="whisker r1"></span><span class="whisker r2"></span>';
+  if (animalId === 'bear') extras = '<div class="muzzle"></div>';
+  if (animalId === 'panda') extras = '<div class="eye-patch left"><div class="eye-inner"></div></div><div class="eye-patch right"><div class="eye-inner"></div></div>';
+  if (animalId === 'tiger') extras = '<span class="stripe s1"></span><span class="stripe s2"></span><span class="stripe s3"></span><div class="muzzle"></div>';
+  if (animalId === 'lion') extras = '<div class="mane"></div>';
+  if (animalId === 'pig') extras = '<div class="snout"></div><div class="nostril left"></div><div class="nostril right"></div>';
+  if (animalId === 'frog') extras = '<div class="eye-bump left"><div class="eye-inner"></div></div><div class="eye-bump right"><div class="eye-inner"></div></div>';
+  if (animalId === 'monkey') extras = '<div class="inner-face"></div>';
+  if (animalId === 'chick') extras = '<div class="hair"><span></span><span></span><span></span></div><div class="beak"></div><div class="wing left"></div><div class="wing right"></div>';
+  if (animalId === 'penguin') extras = '<div class="belly"></div><div class="beak"></div>';
+
+  el.innerHTML = `<div class="face"><span class="ear left"></span><span class="ear right"></span>${extras}<span class="eye left"></span><span class="eye right"></span><span class="blush left"></span><span class="blush right"></span><span class="nose"></span><span class="mouth"></span></div>`;
+  el.style.animationDelay = `0s, ${Math.random() * 2}s`;
+  return el;
+}
+
+// ─── 生成动物 ───
+function spawnAnimalForTeam(team) {
+  if (!state.isRunning) return;
+  const t = state.teams[team];
+  if (t.currentDb < state.dbThreshold) return;
+  if (state.selectedAnimalIds.length === 0) return;
+
+  const animalId = state.selectedAnimalIds[getRandomInt(0, state.selectedAnimalIds.length - 1)];
+  const size = getRandomInt(36, 56);
+  const sticker = createAnimalSticker(animalId, size);
+  const zooEl = team === 'a' ? zooA : zooB;
+
+  const maxX = zooEl.clientWidth - size;
+  const maxY = zooEl.clientHeight - 40 - size;
+  sticker.style.left = getRandomInt(0, Math.max(0, maxX)) + 'px';
+  sticker.style.top = getRandomInt(0, Math.max(0, maxY)) + 'px';
+
+  zooEl.appendChild(sticker);
+  const all = zooEl.querySelectorAll('.animal-sticker');
+  if (all.length > state.maxAnimals) all[0].remove();
+
+  t.animalCount = zooEl.querySelectorAll('.animal-sticker').length;
+  updateStats();
+}
+
+// ─── 更新分贝（带动态偏差） ───
+function updateDb() {
+  // 每10-20秒切换一次偏差方向，模拟真实朗读波动
+  state.biasPhase++;
+  if (state.biasPhase % 15 === 0) {
+    state.biasA = getRandomInt(-8, 12);
+    state.biasB = getRandomInt(-8, 12);
+  }
+
+  const baseA = getRandomInt(25, 55) + state.biasA;
+  const baseB = getRandomInt(25, 55) + state.biasB;
+
+  const aDb = Math.max(15, Math.min(75, baseA));
+  const bDb = Math.max(15, Math.min(75, baseB));
+
+  state.teams.a.currentDb = aDb;
+  state.teams.b.currentDb = bDb;
+  state.teams.a.totalDb += aDb;
+  state.teams.a.dbCount++;
+  state.teams.b.totalDb += bDb;
+  state.teams.b.dbCount++;
+
+  dbAEl.textContent = '🔊 ' + aDb + ' dB';
+  dbBEl.textContent = '🔊 ' + bDb + ' dB';
+  updateStats();
+}
+
+// ─── 更新统计 ───
+function updateStats() {
+  countAEl.textContent = state.teams.a.animalCount;
+  countBEl.textContent = state.teams.b.animalCount;
+
+  const avgA = state.teams.a.dbCount > 0 ? Math.round(state.teams.a.totalDb / state.teams.a.dbCount) : 0;
+  const avgB = state.teams.b.dbCount > 0 ? Math.round(state.teams.b.totalDb / state.teams.b.dbCount) : 0;
+  avgDbAEl.textContent = avgA;
+  avgDbBEl.textContent = avgB;
+
+  const diff = state.teams.a.animalCount - state.teams.b.animalCount;
+  zoneA.classList.remove('leading-a', 'leading-b');
+  zoneB.classList.remove('leading-a', 'leading-b');
+
+  if (diff > 2) {
+    leadingBanner.className = 'leading-banner team-a-lead';
+    leadingBanner.textContent = state.teamNameA + ' 领先 ' + diff + ' 只！继续加油！';
+    zoneA.classList.add('leading-a');
+  } else if (diff < -2) {
+    leadingBanner.className = 'leading-banner team-b-lead';
+    leadingBanner.textContent = state.teamNameB + ' 领先 ' + Math.abs(diff) + ' 只！继续加油！';
+    zoneB.classList.add('leading-b');
+  } else {
+    leadingBanner.className = 'leading-banner tie';
+    leadingBanner.textContent = '势均力敌，加油朗读！';
+  }
+}
+
+// ─── 计时器显示 ───
+function updateTimerDisplay() {
+  if (state.pkTotalSeconds > 0) {
+    timeDisplay.textContent = formatTime(state.pkRemaining);
+    pkTimerWrap.classList.add('countdown');
+    if (state.pkRemaining <= 10 && state.isRunning) {
+      pkTimerWrap.classList.add('urgent');
+    } else {
+      pkTimerWrap.classList.remove('urgent');
+    }
+  } else {
+    timeDisplay.textContent = formatTime(state.pkElapsed);
+    pkTimerWrap.classList.remove('countdown', 'urgent');
+  }
+  pkTimerWrap.querySelector('.label').textContent = state.pkTotalSeconds > 0 ? '剩余时间' : 'PK 时间';
+}
+
+// ─── 计时 ───
+function updateTimer() {
+  state.pkElapsed++;
+  if (state.pkTotalSeconds > 0) {
+    state.pkRemaining--;
+    if (state.pkRemaining <= 0) {
+      state.pkRemaining = 0;
+      updateTimerDisplay();
+      pauseMonitoring();
+      showResult();
+      return;
+    }
+  }
+  updateTimerDisplay();
+}
+
+// ─── 定时器管理 ───
+function clearAllTimers() {
+  if (dbTimer) { clearInterval(dbTimer); dbTimer = null; }
+  if (timeTimer) { clearInterval(timeTimer); timeTimer = null; }
+  if (spawnTimerA) { clearInterval(spawnTimerA); spawnTimerA = null; }
+  if (spawnTimerB) { clearInterval(spawnTimerB); spawnTimerB = null; }
+}
+
+function startSpawnTimers() {
+  if (spawnTimerA) clearInterval(spawnTimerA);
+  if (spawnTimerB) clearInterval(spawnTimerB);
+  spawnTimerA = setInterval(() => spawnAnimalForTeam('a'), state.spawnInterval * 1000);
+  spawnTimerB = setInterval(() => spawnAnimalForTeam('b'), state.spawnInterval * 1000);
+}
+
+function startMonitoring() {
+  state.isRunning = true;
+  dbTimer = setInterval(updateDb, 1000);
+  timeTimer = setInterval(updateTimer, 1000);
+  startSpawnTimers();
+  btnPause.textContent = '⏸ 暂停';
+  btnPause.className = 'btn btn-pause';
+}
+
+function pauseMonitoring() {
+  state.isRunning = false;
+  clearAllTimers();
+  btnPause.textContent = '▶ 继续';
+  btnPause.className = 'btn btn-resume';
+}
+
+btnPause.addEventListener('click', () => {
+  if (state.isRunning) pauseMonitoring();
+  else startMonitoring();
+});
+
+btnEnd.addEventListener('click', () => {
+  pauseMonitoring();
+  showResult();
+});
+
+// ─── 结果展示 + 撒花 ───
+function showResult() {
+  const cA = state.teams.a.animalCount;
+  const cB = state.teams.b.animalCount;
+  const avgA = state.teams.a.dbCount > 0 ? Math.round(state.teams.a.totalDb / state.teams.a.dbCount) : 0;
+  const avgB = state.teams.b.dbCount > 0 ? Math.round(state.teams.b.totalDb / state.teams.b.dbCount) : 0;
+
+  document.getElementById('rNameA').textContent = state.teamNameA;
+  document.getElementById('rNameB').textContent = state.teamNameB;
+  document.getElementById('resultScoreA').textContent = cA;
+  document.getElementById('resultScoreB').textContent = cB;
+  document.getElementById('resultAvgA').textContent = avgA;
+  document.getElementById('resultAvgB').textContent = avgB;
+  document.getElementById('resultTime').textContent = formatTimeFull(state.pkElapsed);
+
+  const titleEl = document.getElementById('resultTitle');
+  if (cA > cB) {
+    titleEl.textContent = state.teamNameA + ' 获胜！';
+    titleEl.className = 'a-win';
+    launchConfetti();
+  } else if (cB > cA) {
+    titleEl.textContent = state.teamNameB + ' 获胜！';
+    titleEl.className = 'b-win';
+    launchConfetti();
+  } else {
+    titleEl.textContent = '平局！';
+    titleEl.className = 'draw';
+    confettiBox.innerHTML = '';
+  }
+
+  resultOverlay.classList.add('active');
+}
+
+function launchConfetti() {
+  confettiBox.innerHTML = '';
+  const colors = ['#ff6b8a','#4dabf7','#ffd43b','#69db7c','#da77f2','#ff922b','#20c997','#f06595'];
+  for (let i = 0; i < 60; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random() * 100 + '%';
+    c.style.background = colors[Math.floor(Math.random() * colors.length)];
+    c.style.width = getRandomInt(6, 12) + 'px';
+    c.style.height = getRandomInt(6, 12) + 'px';
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    c.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
+    c.style.animationDelay = (Math.random() * 1) + 's';
+    confettiBox.appendChild(c);
+  }
+}
+
+// ─── 再来一局 ───
+btnRestart.addEventListener('click', () => {
+  resultOverlay.classList.remove('active');
+  confettiBox.innerHTML = '';
+  resetGame();
+});
+
+function resetGame() {
+  zooA.querySelectorAll('.animal-sticker').forEach(el => el.remove());
+  zooB.querySelectorAll('.animal-sticker').forEach(el => el.remove());
+
+  state.pkElapsed = 0;
+  state.pkRemaining = state.pkTotalSeconds || 0;
+  state.biasPhase = 0;
+  state.biasA = 0;
+  state.biasB = 0;
+  state.teams.a = { currentDb: 35, totalDb: 0, dbCount: 0, animalCount: 0 };
+  state.teams.b = { currentDb: 35, totalDb: 0, dbCount: 0, animalCount: 0 };
+
+  countAEl.textContent = '0';
+  countBEl.textContent = '0';
+  avgDbAEl.textContent = '0';
+  avgDbBEl.textContent = '0';
+  leadingBanner.className = 'leading-banner tie';
+  leadingBanner.textContent = '势均力敌，加油朗读！';
+  updateTimerDisplay();
+  startMonitoring();
+}
+
+// ─── 设置面板 ───
+btnSettings.addEventListener('click', () => {
+  thresholdSlider.value = state.dbThreshold;
+  thresholdValue.textContent = state.dbThreshold + ' dB';
+  speedSlider.value = state.spawnInterval;
+  speedDisplay.textContent = state.spawnInterval + '秒生成一只';
+  renderAnimalOptions();
+  errorMsg.classList.remove('show');
+  modalOverlay.classList.add('active');
+});
+
+modalOverlay.addEventListener('click', (e) => {
+  if (e.target === modalOverlay) modalOverlay.classList.remove('active');
+});
+
+thresholdSlider.addEventListener('input', (e) => {
+  thresholdValue.textContent = e.target.value + ' dB';
+});
+
+speedSlider.addEventListener('input', (e) => {
+  speedDisplay.textContent = e.target.value + '秒生成一只';
+});
+
+function renderAnimalOptions() {
+  animalGrid.innerHTML = '';
+  animals.forEach(animal => {
+    const isSelected = state.selectedAnimalIds.includes(animal.id);
+    const option = document.createElement('div');
+    option.className = 'animal-option' + (isSelected ? ' selected' : '');
+    option.dataset.id = animal.id;
+    option.innerHTML = `<input type="checkbox" ${isSelected ? 'checked' : ''}><div class="sticker-wrapper"></div><div class="name">${animal.name}</div>`;
+    const sticker = createAnimalSticker(animal.id, 48);
+    sticker.style.position = 'relative';
+    sticker.style.animation = 'none';
+    option.querySelector('.sticker-wrapper').appendChild(sticker);
+    option.addEventListener('click', () => {
+      const cb = option.querySelector('input[type="checkbox"]');
+      cb.checked = !cb.checked;
+      option.classList.toggle('selected', cb.checked);
+    });
+    animalGrid.appendChild(option);
+  });
+}
+
+btnSelectAll.addEventListener('click', () => {
+  animalGrid.querySelectorAll('.animal-option').forEach(opt => {
+    opt.classList.add('selected');
+    opt.querySelector('input').checked = true;
+  });
+});
+
+btnSelectNone.addEventListener('click', () => {
+  animalGrid.querySelectorAll('.animal-option').forEach(opt => {
+    opt.classList.remove('selected');
+    opt.querySelector('input').checked = false;
+  });
+});
+
+btnSave.addEventListener('click', () => {
+  const selected = [];
+  animalGrid.querySelectorAll('.animal-option').forEach(opt => {
+    if (opt.querySelector('input').checked) selected.push(opt.dataset.id);
+  });
+  if (selected.length === 0) { errorMsg.classList.add('show'); return; }
+  state.selectedAnimalIds = selected;
+  state.dbThreshold = parseInt(thresholdSlider.value);
+  state.spawnInterval = parseInt(speedSlider.value);
+  if (state.isRunning) startSpawnTimers();
+  modalOverlay.classList.remove('active');
+});
+
+btnReset.addEventListener('click', () => {
+  thresholdSlider.value = 10;
+  thresholdValue.textContent = '10 dB';
+  speedSlider.value = 1;
+  speedDisplay.textContent = '1秒生成一只';
+  state.selectedAnimalIds = animals.map(a => a.id);
+  renderAnimalOptions();
+  errorMsg.classList.remove('show');
+});
+</script>
+</body>
+</html>
